@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dev Kit Test</title>
+<style>
+  :root{
+    --bg:#0f1412;
+    --panel:#171d1a;
+    --line:#243029;
+    --green:#25D366;
+    --green-dark:#128C7E;
+    --text:#eafff2;
+    --muted:#8aa79a;
+    --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:-apple-system,'Segoe UI',Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:20px;
+    margin:0;
+    max-width:520px;
+    margin-inline:auto;
+  }
+  h2{color:var(--green);text-align:center;letter-spacing:.5px;margin-bottom:4px}
+  .sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:20px}
+  .url{width:100%;padding:12px;margin:10px 0;border-radius:8px;border:1px solid var(--green);background:var(--panel);color:#fff;font-size:14px}
+  .btn-full{width:100%;padding:15px;margin:6px 0 16px;background:var(--green-dark);color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-weight:600}
+  .btn-full:active{transform:scale(.98)}
+  .menu{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .menu button{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    padding:16px 8px;background:var(--panel);border:1px solid var(--line);color:#fff;
+    text-align:center;border-radius:10px;font-size:13px;cursor:pointer;line-height:1.3;
+  }
+  .menu button .num{color:var(--green);font-weight:700;font-size:12px}
+  .menu button:active{background:var(--green-dark);border-color:var(--green-dark)}
+  .status{
+    margin-top:6px;font-size:12px;color:var(--muted);min-height:14px;text-align:center;
+  }
+  .status.ok{color:var(--green)}
+  .status.err{color:var(--danger)}
+
+  /* result panel */
+  #resultPanel{display:none;margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  #resultPanel h3{margin:0 0 10px;color:var(--green);font-size:15px}
+  #resultBody{font-size:14px;color:var(--text);white-space:pre-wrap;word-break:break-word}
+  #resultBody video, #resultBody img{width:100%;border-radius:8px;margin-top:8px}
+  .closeBtn{float:right;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1}
+
+  .log{
+    margin-top:18px;background:#0b0f0d;border:1px solid var(--line);border-radius:8px;
+    padding:10px 12px;font-size:11px;color:var(--muted);max-height:120px;overflow-y:auto;
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+  }
+  .log div{margin-bottom:2px}
+  .log .tag-ok{color:var(--green)}
+  .log .tag-err{color:var(--danger)}
+</style>
+</head>
+<body>
+
+<h2>🧪 DEV KIT TEST</h2>
+<div class="sub">Semua fitur di bawah ini nyata &amp; berfungsi — gratis, tanpa server</div>
+
+<input class="url" id="urlInput" placeholder="Masukkan URL (misal: google.com)" value="google.com">
+<button class="btn-full" onclick="goUrl()">🔗 Go to URL</button>
+
+<div class="menu">
+  <button onclick="testDownloadText()"><span class="num">1</span>Test Download<div class="status" id="st1"></div></button>
+  <button onclick="testDownloadImage()"><span class="num">2</span>Test Download Gambar<div class="status" id="st2"></div></button>
+  <button onclick="testUpload()"><span class="num">3</span>Test Upload<div class="status" id="st3"></div></button>
+  <button onclick="testVideo()"><span class="num">4</span>Test Video<div class="status" id="st4"></div></button>
+  <button onclick="testAudio()"><span class="num">5</span>Test Audio<div class="status" id="st5"></div></button>
+  <button onclick="testRandomFile()"><span class="num">6</span>Test File Random<div class="status" id="st6"></div></button>
+  <button onclick="testCamera()"><span class="num">7</span>Test Camera<div class="status" id="st7"></div></button>
+  <button onclick="testLocation()"><span class="num">8</span>Test Location<div class="status" id="st8"></div></button>
+  <button onclick="testPayment()"><span class="num">9</span>Test Payment (Mock)<div class="status" id="st9"></div></button>
+  <button onclick="testAlert()"><span class="num">10</span>Test Alert<div class="status" id="st10"></div></button>
+</div>
+
+<div id="resultPanel">
+  <button class="closeBtn" onclick="closePanel()">✕</button>
+  <h3 id="resultTitle">Result</h3>
+  <div id="resultBody"></div>
+</div>
+
+<div class="log" id="log"></div>
+
+<script>
+function logLine(msg, ok){
+  const l = document.getElementById('log');
+  const d = document.createElement('div');
+  const time = new Date().toLocaleTimeString();
+  d.innerHTML = `<span class="${ok?'tag-ok':'tag-err'}">[${ok?'OK':'ERR'}]</span> ${time} — ${msg}`;
+  l.prepend(d);
+}
+
+function setStatus(id, msg, ok){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status ' + (ok ? 'ok' : 'err');
+}
+
+function showPanel(title, html){
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultBody').innerHTML = html;
+  document.getElementById('resultPanel').style.display = 'block';
+  document.getElementById('resultPanel').scrollIntoView({behavior:'smooth', block:'center'});
+}
+function closePanel(){
+  document.getElementById('resultPanel').style.display = 'none';
+  document.getElementById('resultBody').innerHTML = '';
+}
+
+// 0. Go to URL
+function goUrl(){
+  var u = document.getElementById('urlInput').value.trim();
+  if(!u){ return; }
+  if(u.indexOf('http') !== 0) u = 'https://' + u;
+  window.open(u, '_blank');
+  logLine('Membuka URL: ' + u, true);
+}
+
+// Generic downloader menggunakan JavaScript Interface
+function downloadBlob(content, filename, mime) {
+  try {
+    // Coba gunakan JavaScript Interface untuk Android
+    if (window.AndroidDownloader) {
+      let base64Data;
+      if (typeof content === 'string') {
+        base64Data = btoa(unescape(encodeURIComponent(content)));
+      } else {
+        // Untuk Blob atau ArrayBuffer
+        const reader = new FileReader();
+        reader.onload = function() {
+          const base64 = reader.result.split(',')[1];
+          window.AndroidDownloader.downloadBlob(base64, filename, mime || 'text/plain');
+        };
+        reader.readAsDataURL(content);
+        return true;
+      }
+      window.AndroidDownloader.downloadBlob(base64Data, filename, mime || 'text/plain');
+      return true;
+    }
+    
+    // Fallback ke metode biasa jika bukan di Android WebView
+    const blob = new Blob([content], {type: mime || 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    return true;
+  } catch(e) {
+    console.error('Download error:', e);
+    return false;
+  }
+}
+
+// 1. Test Download (text file, generated locally — always works, no network needed)
+function testDownloadText(){
+  const content = 'DEV KIT TEST FILE\nGenerated: ' + new Date().toString() + '\nStatus: OK\n';
+  const ok = downloadBlob(content, 'test.txt', 'text/plain');
+  setStatus('st1', ok ? 'Downloaded ✓' : 'Failed', ok);
+  logLine('Test Download (test.txt)', ok);
+}
+
+// 2. Test Download Gambar (generate PNG on a canvas, no external URL needed)
+function testDownloadImage(){
+  try{
+    const canvas = document.createElement('canvas');
+    canvas.width = 300; canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0,0,300,200);
+    grad.addColorStop(0,'#25D366');
+    grad.addColorStop(1,'#128C7E');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,300,200);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('DEV KIT TEST', 150, 90);
+    ctx.font = '13px Arial';
+    ctx.fillText(new Date().toLocaleString(), 150, 120);
+    canvas.toBlob(function(blob){
+      const reader = new FileReader();
+      reader.onload = function() {
+        const base64 = reader.result.split(',')[1];
+        if (window.AndroidDownloader) {
+          window.AndroidDownloader.downloadBlob(base64, 'image.png', 'image/png');
+          setStatus('st2', 'Downloaded ✓', true);
+          logLine('Test Download Gambar (image.png)', true);
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = 'image.png';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(()=>URL.revokeObjectURL(url), 5000);
+          setStatus('st2', 'Downloaded ✓', true);
+          logLine('Test Download Gambar (image.png)', true);
+        }
+      };
+      reader.readAsDataURL(blob);
+    }, 'image/png');
+  }catch(e){
+    setStatus('st2', 'Failed', false);
+    logLine('Test Download Gambar: ' + e.message, false);
+  }
+}
+
+// 3. Test Upload
+function testUpload(){
+  const i = document.createElement('input');
+  i.type = 'file';
+  i.onchange = function(e){
+    const f = e.target.files[0];
+    if(f){
+      const sizeKB = (f.size/1024).toFixed(1);
+      setStatus('st3', f.name + ' (' + sizeKB + ' KB)', true);
+      logLine('Upload dipilih: ' + f.name + ', ' + sizeKB + ' KB, type=' + (f.type||'unknown'), true);
+      showPanel('Upload Result',
+        '<b>Nama:</b> ' + f.name + '<br><b>Ukuran:</b> ' + sizeKB + ' KB<br><b>Tipe:</b> ' + (f.type || 'unknown') +
+        '<br><b>Terakhir diubah:</b> ' + new Date(f.lastModified).toLocaleString());
+    }
+  };
+  i.click();
+}
+
+// 4. Test Video (inline player, public domain sample)
+function testVideo(){
+  showPanel('Video Test',
+    '<video controls autoplay muted playsinline style="width:100%;border-radius:8px">' +
+    '<source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">' +
+    'Browser tidak mendukung video.</video>');
+  setStatus('st4', 'Playing ✓', true);
+  logLine('Test Video: memutar sample video', true);
+}
+
+// 5. Test Audio (inline player, public domain sample)
+function testAudio(){
+  showPanel('Audio Test',
+    '<audio controls autoplay style="width:100%">' +
+    '<source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">' +
+    'Browser tidak mendukung audio.</audio>');
+  setStatus('st5', 'Playing ✓', true);
+  logLine('Test Audio: memutar sample audio', true);
+}
+
+// 6. Test File Random (generate random JSON data file locally)
+function testRandomFile(){
+  const data = {
+    id: Math.random().toString(36).slice(2),
+    timestamp: new Date().toISOString(),
+    randomValues: Array.from({length:5}, () => Math.floor(Math.random()*1000))
+  };
+  const ok = downloadBlob(JSON.stringify(data, null, 2), 'random.json', 'application/json');
+  setStatus('st6', ok ? 'Downloaded ✓' : 'Failed', ok);
+  logLine('Test File Random (random.json)', ok);
+}
+
+// 7. Test Camera (live preview, not just permission alert)
+function testCamera(){
+  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){
+    setStatus('st7', 'Tidak didukung', false);
+    logLine('Camera: getUserMedia tidak tersedia', false);
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:true})
+    .then(function(stream){
+      setStatus('st7', 'Camera OK ✓', true);
+      logLine('Camera: akses diberikan, menampilkan preview', true);
+      showPanel('Camera Preview', '<video id="camPreview" autoplay playsinline style="width:100%;border-radius:8px;background:#000"></video>' +
+        '<button class="btn-full" style="margin-top:10px" onclick="stopCamera()">Stop Camera</button>');
+      const v = document.getElementById('camPreview');
+      v.srcObject = stream;
+      window._camStream = stream;
+    })
+    .catch(function(e){
+      setStatus('st7', 'Denied/Error', false);
+      logLine('Camera Error: ' + e.message, false);
+    });
+}
+function stopCamera(){
+  if(window._camStream){
+    window._camStream.getTracks().forEach(t => t.stop());
+    window._camStream = null;
+  }
+  closePanel();
+}
+
+// 8. Test Location (with reverse info + map link)
+function testLocation(){
+  if(!navigator.geolocation){
+    setStatus('st8', 'Tidak didukung', false);
+    logLine('Geolocation tidak didukung', false);
+    return;
+  }
+  setStatus('st8', 'Mencari...', true);
+  navigator.geolocation.getCurrentPosition(
+    function(p){
+      const lat = p.coords.latitude.toFixed(6);
+      const lon = p.coords.longitude.toFixed(6);
+      const acc = p.coords.accuracy.toFixed(0);
+      setStatus('st8', 'Lokasi OK ✓', true);
+      logLine('Location: lat=' + lat + ' lon=' + lon + ' acc=' + acc + 'm', true);
+      showPanel('Location Result',
+        '<b>Latitude:</b> ' + lat + '<br><b>Longitude:</b> ' + lon + '<br><b>Akurasi:</b> ±' + acc + ' m<br><br>' +
+        '<a class="btn-full" style="display:inline-block;text-decoration:none;box-sizing:border-box" target="_blank" href="https://www.google.com/maps?q=' + lat + ',' + lon + '">Buka di Google Maps</a>');
+    },
+    function(e){
+      setStatus('st8', 'Denied/Error', false);
+      logLine('Location Error: ' + e.message, false);
+    },
+    {enableHighAccuracy:true, timeout:10000}
+  );
+}
+
+// 9. Test Payment (clearly-labeled mock flow — no real payment gateway is free/safe to embed)
+function testPayment(){
+  showPanel('Payment Test (Mock)',
+    '<div style="color:#8aa79a;font-size:12px;margin-bottom:10px">⚠️ Ini simulasi, tidak ada transaksi nyata / tidak butuh koneksi ke gateway pembayaran.</div>' +
+    '<b>Item:</b> Test Product<br><b>Harga:</b> Rp 10.000<br><br>' +
+    '<button class="btn-full" onclick="mockPaySuccess()">Bayar Sekarang (Simulasi)</button>');
+  setStatus('st9', 'Panel dibuka', true);
+  logLine('Test Payment: membuka simulasi pembayaran', true);
+}
+function mockPaySuccess(){
+  const trxId = 'TRX-' + Date.now();
+  document.getElementById('resultBody').innerHTML =
+    '<div style="color:#25D366">✅ Pembayaran simulasi berhasil</div><br><b>ID Transaksi:</b> ' + trxId +
+    '<br><b>Waktu:</b> ' + new Date().toLocaleString();
+  logLine('Mock payment success: ' + trxId, true);
+}
+
+// 10. Test Alert
+function testAlert(){
+  alert('Alert test - OK! (' + new Date().toLocaleTimeString() + ')');
+  setStatus('st10', 'Alert OK ✓', true);
+  logLine('Test Alert: alert() dipicu', true);
+}
+</script>
+</body>
+</html>
